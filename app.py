@@ -2,6 +2,7 @@ import sys
 import yfinance as yf
 import pandas as pd
 from PyQt5 import QtWidgets, QtCore
+import pyqtgraph as pg
 from PyQt5.QtWidgets import (QMainWindow, QApplication, QWidget, QVBoxLayout, 
                            QComboBox, QPushButton, QListWidget, QLabel, 
                            QDateEdit, QTableWidget, QTableWidgetItem, QHBoxLayout,
@@ -115,6 +116,25 @@ class StockDataUI(QMainWindow):
         self.value_table.setHorizontalHeaderLabels(['Ticker', 'Value'])
         layout.addWidget(self.value_table)
 
+        layout.addWidget(QLabel("Portfolio price movement"))
+        self.plot_chart = pg.PlotWidget()
+        layout.addWidget(self.plot_chart)
+
+    def update_plot_chart(self, portfolio_df):
+        dates = portfolio_df.index.astype('int64') // 10**9
+        self.plot_chart.plot(
+            x = dates,
+            y = portfolio_df.values,
+            pen=pg.mkPen(color='b', width=2),
+            symbol='o',
+            symbolBrush=('b')
+        )
+        self.plot_chart.setLabel('left', "Portfolio Value")
+        self.plot_chart.setLabel('bottom', "Date")
+        self.plot_chart.getAxis('bottom').setTicks([[(t, str(d.date())) for t, d in zip(dates, portfolio_df.index)]])
+
+        self.plot_chart.showGrid(x=True, y=True)
+
     def filter_tickers(self, text):
         self.ticker_filter.addItem(text)
 
@@ -204,11 +224,18 @@ class StockDataUI(QMainWindow):
             # Run optimization
             optimization_results = self.optimize_portfolio_func(prices_df, value)
             print(optimization_results)
-            
+
+            weights = optimization_results['weights']
+            filtered_prices_df = prices_df[list(weights.keys())]
+
+            weights_series = pd.Series(weights)
+            portfolio_value = filtered_prices_df.dot(weights_series)
+           
             # Update the UI with results
             self.update_weights_table(optimization_results['weights'])
             self.update_metrics_table(optimization_results['metrics'])
             self.update_value_table(optimization_results['value']) 
+            self.update_plot_chart(portfolio_value)
 
             self.status_label.setText("Portfolio optimization completed successfully")
             
