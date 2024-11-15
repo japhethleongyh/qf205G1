@@ -5,7 +5,7 @@ from pypfopt.efficient_frontier import EfficientFrontier
 from collections import OrderedDict
 from app import main
 
-def optimise(pivot_df):
+def optimise(pivot_df, portfolio_value):
 
         pivot_df.index = pd.to_datetime(pivot_df.index)
         pivot_df = pivot_df.sort_index()
@@ -28,7 +28,12 @@ def optimise(pivot_df):
 
         metrics = {"Expected return": f"{round(metrics_tuple[0] * 100, 2)}%", "Semivariance": f"{round(metrics_tuple[1] * 100, 2)}%" , "Sortino ratio": metrics_tuple[2]}
 
-        return { "weights" : response, "metrics" : metrics }
+        value = {}
+
+        for ticker, weight in response.items():
+            value[ticker] = "$" + '{:.2f}'.format(portfolio_value * weight)
+
+        return { "weights" : response, "metrics" : metrics, "value": value }
 
 if __name__ == "__main__":
     main(optimise)

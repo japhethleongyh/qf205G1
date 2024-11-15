@@ -4,7 +4,8 @@ import pandas as pd
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import (QMainWindow, QApplication, QWidget, QVBoxLayout, 
                            QComboBox, QPushButton, QListWidget, QLabel, 
-                           QDateEdit, QTableWidget, QTableWidgetItem, QHBoxLayout)
+                           QDateEdit, QTableWidget, QTableWidgetItem, QHBoxLayout,
+                           QLineEdit)
 from datetime import datetime, timedelta
 
 class StockDataUI(QMainWindow):
@@ -40,6 +41,10 @@ class StockDataUI(QMainWindow):
         self.ticker_filter.addItems(sorted(self.all_tickers))
 
     def setup_left_panel(self, layout):
+        self.text_box = QLineEdit()
+        layout.addWidget(QLabel("Portfolio Value"))
+        layout.addWidget(self.text_box)
+
         # Ticker search/filter combobox
         self.ticker_filter = QComboBox()
         self.ticker_filter.setEditable(True)
@@ -104,6 +109,12 @@ class StockDataUI(QMainWindow):
         layout.addWidget(QLabel("Portfolio Metrics"))
         layout.addWidget(self.metrics_table)
 
+        layout.addWidget(QLabel("Amount"))
+        self.value_table = QTableWidget()
+        self.value_table.setColumnCount(2)
+        self.value_table.setHorizontalHeaderLabels(['Ticker', 'Value'])
+        layout.addWidget(self.value_table)
+
     def filter_tickers(self, text):
         self.ticker_filter.addItem(text)
 
@@ -150,7 +161,20 @@ class StockDataUI(QMainWindow):
         
         self.metrics_table.resizeColumnsToContents()
 
+    def update_value_table(self, value_dict):
+        self.value_table.setRowCount(len(value_dict))
+        for i, (ticker, value) in enumerate(value_dict.items()):
+            # Metric name
+            value_item = QTableWidgetItem(ticker)
+            self.value_table.setItem(i, 0, value_item)
+            
+            value_item = QTableWidgetItem(str(value))
+            self.value_table.setItem(i, 1, value_item)
+        
+        self.value_table.resizeColumnsToContents()
+
     def optimize_portfolio(self):
+        value = float(self.text_box.text())
         selected_tickers = self.get_selected_tickers()
         if len(selected_tickers) < 2:
             self.status_label.setText("Please select at least 2 tickers")
@@ -178,14 +202,14 @@ class StockDataUI(QMainWindow):
             
             print('runs to here')
             # Run optimization
-            optimization_results = self.optimize_portfolio_func(prices_df)
+            optimization_results = self.optimize_portfolio_func(prices_df, value)
             print(optimization_results)
             
             # Update the UI with results
             self.update_weights_table(optimization_results['weights'])
-            if 'metrics' in optimization_results:
-                self.update_metrics_table(optimization_results['metrics'])
-            
+            self.update_metrics_table(optimization_results['metrics'])
+            self.update_value_table(optimization_results['value']) 
+
             self.status_label.setText("Portfolio optimization completed successfully")
             
         except Exception as e:
