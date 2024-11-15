@@ -26,12 +26,14 @@ def optimise(pivot_df, portfolio_value):
 
         metrics_tuple = ef.portfolio_performance(verbose=True)
 
+        format_value = lambda x: "$" + '{:.2f}'.format(portfolio_value * x)
+
         metrics = {"Expected return": f"{round(metrics_tuple[0] * 100, 2)}%", "Semivariance": f"{round(metrics_tuple[1] * 100, 2)}%" , "Sortino ratio": metrics_tuple[2]}
 
         value = {}
 
         for ticker, weight in response.items():
-            value[ticker] = "$" + '{:.2f}'.format(portfolio_value * weight)
+            value[ticker] = format_value(weight)
 
         return { "weights" : response, "metrics" : metrics, "value": value }
 
